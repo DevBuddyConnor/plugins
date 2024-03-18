@@ -1,1 +1,1 @@
-# git-interactor
+# Plugins for AI Agents by Photenix
