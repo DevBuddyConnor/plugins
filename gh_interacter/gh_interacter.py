@@ -19,7 +19,8 @@ def require_api_key(view_function):
 
 def check_branch_exists(repo_full_name, branch_name):
     github_api_url = f"https://api.github.com/repos/{repo_full_name}/branches/{branch_name}"
-    response = requests.get(github_api_url)
+    headers = {'Authorization': f'token {os.environ.get("GITHUB_TOKEN")}', 'Accept': 'application/vnd.github.v3+json'}
+    response = requests.get(github_api_url, headers=headers)
     return response.status_code == 200
 
 @app.route('/pr_content', methods=['GET'])
@@ -33,7 +34,8 @@ def get_pr_content():
 
     # 获取PR的基本信息
     github_api_url = f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}"
-    response = requests.get(github_api_url)
+    headers = {'Authorization': f'token {os.environ.get("GITHUB_TOKEN")}', 'Accept': 'application/vnd.github.v3+json'}
+    response = requests.get(github_api_url, headers=headers)
 
     if response.status_code == 404:
         return jsonify({'code': 404, 'message': 'Pull Request not found'}), 404
@@ -45,7 +47,7 @@ def get_pr_content():
     if not diff_url:
         return jsonify({'code': 500, 'message': 'Failed to get diff URL'}), 500
 
-    diff_response = requests.get(diff_url, headers={'Accept': 'application/vnd.github.v3.diff'})
+    diff_response = requests.get(diff_url, headers={'Accept': 'application/vnd.github.v3.diff', 'Authorization': f'token {os.environ.get("GITHUB_TOKEN")}'})
 
     if diff_response.status_code != 200:
         return jsonify({'code': diff_response.status_code, 'message': 'Failed to get PR diff'}), diff_response.status_code
@@ -55,7 +57,7 @@ def get_pr_content():
     # 获取PR的源分支和源仓库
     source_branch = pr_content.get('head', {}).get('ref')
     source_repo = pr_content.get('head', {}).get('repo', {}).get('full_name')
-    
+
     return jsonify({
         'title': pr_content.get('title'),
         'body': pr_content.get('body'),
@@ -83,7 +85,8 @@ def get_file_content():
         return jsonify({'code': 400, 'message': 'Missing repo_full_name or file_path'}), 400
 
     github_api_url = f"https://api.github.com/repos/{repo_full_name}/contents/{file_path}?ref={branch_name}"
-    response = requests.get(github_api_url)
+    headers = {'Authorization': f'token {os.environ.get("GITHUB_TOKEN")}', 'Accept': 'application/vnd.github.v3.raw'}
+    response = requests.get(github_api_url, headers=headers)
 
     if response.status_code != 200:
         return jsonify({'code': response.status_code, 'message': f'Failed to fetch file content from {branch_name} branch'}), response.status_code
@@ -106,7 +109,8 @@ def get_issue_info():
         return jsonify({'code': 400, 'message': 'Missing repo_full_name or issue_number'}), 400
 
     github_api_url = f"https://api.github.com/repos/{repo_full_name}/issues/{issue_number}"
-    response = requests.get(github_api_url)
+    headers = {'Authorization': f'token {os.environ.get("GITHUB_TOKEN")}', 'Accept': 'application/vnd.github.v3+json'}
+    response = requests.get(github_api_url, headers=headers)
 
     if response.status_code != 200:
         return jsonify({'code': response.status_code, 'message': 'Failed to fetch issue info'}), response.status_code
@@ -132,13 +136,8 @@ def submit_pr_comment():
         return jsonify({'code': 400, 'message': 'Missing required parameters'}), 400
 
     comment_url = f"https://api.github.com/repos/{repo_full_name}/issues/{pr_number}/comments"
-    headers = {
-        'Authorization': f'token {token}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
-    data = {
-        'body': comment_body
-    }
+    headers = {'Authorization': f'token {token}', 'Accept': 'application/vnd.github.v3+json'}
+    data = {'body': comment_body}
     response = requests.post(comment_url, headers=headers, json=data)
 
     if response.status_code != 201:
@@ -166,7 +165,8 @@ def get_repo_structure():
 
     # 获取最新提交的 SHA
     commits_url = f"https://api.github.com/repos/{repo_full_name}/commits/{branch_name}"
-    commits_response = requests.get(commits_url)
+    headers = {'Authorization': f'token {os.environ.get("GITHUB_TOKEN")}', 'Accept': 'application/vnd.github.v3+json'}
+    commits_response = requests.get(commits_url, headers=headers)
 
     if commits_response.status_code != 200:
         return jsonify({'code': commits_response.status_code, 'message': 'Failed to get latest commit', 'details': commits_response.json()}), commits_response.status_code
@@ -177,7 +177,7 @@ def get_repo_structure():
 
     # 获取目录树
     trees_url = f"https://api.github.com/repos/{repo_full_name}/git/trees/{latest_commit_sha}?recursive=1"
-    trees_response = requests.get(trees_url)
+    trees_response = requests.get(trees_url, headers=headers)
 
     if trees_response.status_code != 200:
         return jsonify({'code': trees_response.status_code, 'message': 'Failed to get repository tree', 'details': trees_response.json()}), trees_response.status_code
