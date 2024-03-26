@@ -8,6 +8,7 @@ from urllib.parse import quote_plus
 app = Flask(__name__)
 
 RHINO_API_KEY = os.getenv("RHINO_API_KEY")
+GITLAB_DOMAIN = os.getenv('GITLAB_DOMAIN', 'gitlab.com')
 
 def require_api_key(view_function):
     @wraps(view_function)
@@ -20,7 +21,7 @@ def require_api_key(view_function):
 
 def check_branch_exists(project_id, branch_name):
     encoded_project_id = quote_plus(project_id)
-    gitlab_api_url = f"https://gitlab.com/api/v4/projects/{encoded_project_id}/repository/branches/{branch_name}"
+    gitlab_api_url = f"https://{GITLAB_DOMAIN}/api/v4/projects/{encoded_project_id}/repository/branches/{branch_name}"
     headers = {'Private-Token': os.getenv('GITLAB_PRIVATE_TOKEN')}
     response = requests.get(gitlab_api_url, headers=headers)
     return response.status_code == 200
@@ -34,8 +35,11 @@ def get_mr_content():
     if not project_id or not mr_iid:
         return jsonify({'code': 400, 'message': 'Missing project_id or mr_iid'}), 400
 
+    # 先对 project_id 进行编码
+    encoded_project_id = quote_plus(project_id)
+    
     # 使用project_id构建获取MR基本信息的API URL
-    gitlab_api_url = f"https://gitlab.com/api/v4/projects/{encoded_project_id}/merge_requests/{mr_iid}"
+    gitlab_api_url = f"https://{GITLAB_DOMAIN}/api/v4/projects/{encoded_project_id}/merge_requests/{mr_iid}"
     headers = {'Private-Token': os.getenv('GITLAB_PRIVATE_TOKEN')}
     response = requests.get(gitlab_api_url, headers=headers)
 
@@ -46,7 +50,7 @@ def get_mr_content():
 
     # 构建获取MR的diffs的API URL
     encoded_project_id = quote_plus(project_id)
-    diffs_api_url = f"https://gitlab.com/api/v4/projects/{encoded_project_id}/merge_requests/{mr_iid}/changes"
+    diffs_api_url = f"https://{GITLAB_DOMAIN}/api/v4/projects/{encoded_project_id}/merge_requests/{mr_iid}/changes"
     diffs_response = requests.get(diffs_api_url, headers=headers)
 
     if diffs_response.status_code != 200:
@@ -88,7 +92,7 @@ def get_file_content():
     # 构建GitLab API的URL
     file_path_encoded = urllib.parse.quote_plus(file_path)
     encoded_project_id = quote_plus(project_id)
-    gitlab_api_url = f"https://gitlab.com/api/v4/projects/{encoded_project_id}/repository/files/{file_path_encoded}/raw?ref={branch_name}"
+    gitlab_api_url = f"https://{GITLAB_DOMAIN}/api/v4/projects/{encoded_project_id}/repository/files/{file_path_encoded}/raw?ref={branch_name}"
     
     headers = {'Private-Token': os.getenv('GITLAB_PRIVATE_TOKEN')}
     response = requests.get(gitlab_api_url, headers=headers)
@@ -110,7 +114,7 @@ def get_issue_info():
 
     # 构建获取Issue信息的GitLab API URL
     encoded_project_id = quote_plus(project_id)
-    gitlab_api_url = f"https://gitlab.com/api/v4/projects/{encoded_project_id}/issues/{issue_iid}"
+    gitlab_api_url = f"https://{GITLAB_DOMAIN}/api/v4/projects/{encoded_project_id}/issues/{issue_iid}"
     
     # 使用Private-Token进行认证
     headers = {'Private-Token': os.getenv('GITLAB_PRIVATE_TOKEN')}
@@ -142,7 +146,7 @@ def submit_mr_comment():
 
     # 构建GitLab API URL来添加评论
     encoded_project_id = quote_plus(project_id)
-    comment_url = f"https://gitlab.com/api/v4/projects/{encoded_project_id}/merge_requests/{mr_iid}/notes"
+    comment_url = f"https://{GITLAB_DOMAIN}/api/v4/projects/{encoded_project_id}/merge_requests/{mr_iid}/notes"
     
     headers = {
         'Private-Token': token,
@@ -157,7 +161,6 @@ def submit_mr_comment():
 
     if response.status_code != 201:
         return jsonify({'code': response.status_code, 'message': 'Failed to create comment'}), response.status_code
-
     return jsonify({'message': 'Comment created successfully'}), 201
 
 @app.route('/repo_structure', methods=['GET'])
@@ -180,7 +183,7 @@ def get_repo_structure():
 
     # 构建获取仓库文件和目录的GitLab API URL
     encoded_project_id = quote_plus(project_id)
-    gitlab_api_url = f"https://gitlab.com/api/v4/projects/{encoded_project_id}/repository/tree?ref={branch_name}&recursive=true"
+    gitlab_api_url = f"https://{GITLAB_DOMAIN}/api/v4/projects/{encoded_project_id}/repository/tree?ref={branch_name}&recursive=true"
     
     headers = {'Private-Token': os.getenv('GITLAB_PRIVATE_TOKEN')}
     response = requests.get(gitlab_api_url, headers=headers)
