@@ -43,11 +43,11 @@ def get_pr_content():
         return jsonify({'code': response.status_code, 'message': 'Unexpected error occurred'}), response.status_code
 
     # 获取PR的diff
-    diff_url = response.json().get('diff_url')
-    if not diff_url:
-        return jsonify({'code': 500, 'message': 'Failed to get diff URL'}), 500
-
-    diff_response = requests.get(diff_url, headers={'Accept': 'application/vnd.github.v3.diff', 'Authorization': f'token {os.environ.get("GITHUB_TOKEN")}'})
+    diff_headers = {
+        "Authorization": f'token {os.environ.get("GITHUB_TOKEN")}', 
+        "Accept": "application/vnd.github.v3.diff"  # 明确要求获取diff格式的内容
+    }
+    diff_response = requests.get(github_api_url, headers=diff_headers)
 
     if diff_response.status_code != 200:
         return jsonify({'code': diff_response.status_code, 'message': 'Failed to get PR diff'}), diff_response.status_code
