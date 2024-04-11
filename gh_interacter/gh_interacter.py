@@ -1,4 +1,5 @@
 from functools import wraps
+import mimetypes
 from flask import Flask, request, jsonify, abort
 import requests
 import base64
@@ -95,9 +96,17 @@ def get_file_content():
     if file_content_encoded is None:
         return jsonify({'code': 500, 'message': 'No content found in the response'}), 500
 
-    # 对Base64编码的内容进行解码
-    file_content_decoded = base64.b64decode(file_content_encoded).decode('utf-8')
-    return jsonify({'content': file_content_decoded})
+    # 使用mimetypes来判断文件类型
+    file_mime_type, _ = mimetypes.guess_type(file_path)
+
+    if file_mime_type and file_mime_type.startswith('image'):
+        return jsonify({'content': f'{file_path} 是一个 {file_mime_type} 类型的二进制文件，当前无法处理。'})
+    else:
+        try:
+            file_content_decoded = base64.b64decode(file_content_encoded).decode('utf-8')
+            return jsonify({'content': file_content_decoded})
+        except UnicodeDecodeError as e:
+            return jsonify({'error': '文件解码错误，无法以utf-8格式解码'}), 500
 
 @app.route('/issue_info', methods=['GET'])
 @require_api_key
