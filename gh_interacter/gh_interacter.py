@@ -95,9 +95,13 @@ def get_file_content():
     if file_content_encoded is None:
         return jsonify({'code': 500, 'message': 'No content found in the response'}), 500
 
-    # 对Base64编码的内容进行解码
-    file_content_decoded = base64.b64decode(file_content_encoded).decode('utf-8')
-    return jsonify({'content': file_content_decoded})
+    # 尝试utf-8解码
+    try:
+        file_content_decoded = base64.b64decode(file_content_encoded).decode('utf-8')
+        return jsonify({'content': file_content_decoded})
+    except UnicodeDecodeError as e:
+        # 解码失败，认为是二进制文件
+        return jsonify({'error': f'无法显示 {file_path} 的内容，这可能是一个二进制文件'}), 500
 
 @app.route('/issue_info', methods=['GET'])
 @require_api_key
