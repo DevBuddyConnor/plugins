@@ -1,1 +1,1 @@
-# Plugins for AI Agents by Photenix
+# Plugins for DevAgents
