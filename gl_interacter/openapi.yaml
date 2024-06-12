@@ -1,0 +1,202 @@
+openapi: 3.0.0
+info:
+  title: GitLab Integration API
+  description: API for integrating with GitLab features like MRs, issues, and repo structure.
+  version: "1.0"
+
+servers:
+  - url: https://openrhino.org
+
+paths:
+  /mr_content:
+    get:
+      summary: Get Merge Request Content
+      operationId: getMrContent
+      tags:
+        - Merge Request
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: mr_iid
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  source_branch:
+                    type: string
+                  target_branch:
+                    type: string
+                  diffs:
+                    type: string
+        '400':
+          description: Missing Parameters
+        '401':
+          description: Unauthorized
+        '404':
+          description: Resource Not Found
+
+  /file_content:
+    get:
+      summary: Get File Content
+      operationId: getFileContent
+      tags:
+        - Repository
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: file_path
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: branch_name
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+        '400':
+          description: Missing Parameters
+        '401':
+          description: Unauthorized
+        '404':
+          description: Resource Not Found
+
+  /issue_info:
+    get:
+      summary: Get Issue Information
+      operationId: getIssueInfo
+      tags:
+        - Issues
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: issue_iid
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  description:
+                    type: string
+        '400':
+          description: Missing Parameters
+        '401':
+          description: Unauthorized
+        '404':
+          description: Resource Not Found
+
+  /submit_mr_comment:
+    post:
+      summary: Submit a Comment to a Merge Request
+      operationId: submitMrComment
+      tags:
+        - Merge Request
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: mr_iid
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment_body:
+                  type: string
+      responses:
+        '201':
+          description: Comment Created Successfully
+        '400':
+          description: Missing Parameters
+        '401':
+          description: Unauthorized
+        '404':
+          description: Resource Not Found
+
+  /repo_structure:
+    get:
+      summary: Get Repository Structure
+      operationId: getRepoStructure
+      tags:
+        - Repository Structure
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: branch_name
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  directories:
+                    type: array
+                    items:
+                      type: string
+                  files:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Missing Parameters
+        '401':
+          description: Unauthorized
+        '404':
+          description: No main or master branch found
